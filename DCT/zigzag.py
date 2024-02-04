@@ -1,5 +1,8 @@
 import numpy as np
 
+
+### FONCTIONS BASE SUR LE PROJET: https://github.com/amzhang1/simple-JPEG-compression/blob/master/zigzag.py
+
 def zigzag(input):
     # Initialiser les variables
     h = 0
