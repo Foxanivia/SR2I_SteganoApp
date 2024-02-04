@@ -1,48 +1,71 @@
 from DCT.DCT_encode import *
 from DCT.DCT_decode import *
+import cv2
+from skimage import color
 
 def main():
+
+    print("Ce petit programme a pour but de montrer l'utilisation de la méthode DCT.")
+    print("De par la complexité de cette dernière elle n'est que partiellement implémenté.")
+    print("Vous avez la possibilité de voir l'impact d'une modification brut et sans distinction sur les hautes fréquences:\n 0) Extraction sans impact\n 1) Impact\n 2) Exit ")
+
+    # Gestion réponse
+    IMPACT =0
+    while True:
+        result = input()
+        if result =='0':
+
+            break
+        if result =='1':
+            IMPACT = 1
+            break
+        if result =='2':
+            exit()
+
     ## - Exemple d'utilisation
-    message = "Secret Message"
     img_path = "ressources/img/lenna.jpg"
-    output_path = "ressources/img/result/lenna_stego.jpg"
 
     ## - Préparer l'image et convertir en YCbCr
-    prepared_image = prepare_image(img_path)
-    ycbcr_image = convert_rgb_to_ycbcr(prepared_image)
-    #save_ycbcr_channels(ycbcr_image, "ressources/img/result/test")
+    ycbcr_image = prepare_image(img_path)
+    ycbcr_image = center_YCbCr_values(ycbcr_image)
 
+    ## - Découper les canaux en blocs de 8x8
+    Y_blocks = img_to_squares8x8(ycbcr_image[:, :, 0])
+    Cb_blocks = img_to_squares8x8(ycbcr_image[:,:,1])
+    Cr_blocks = img_to_squares8x8(ycbcr_image[:,:,2])
 
-    ## - Découper le canal Y en blocs de 8x8
-    Y_channel = ycbcr_image[:, :, 0]
-    Y_img = Image.fromarray(np.uint8(Y_channel))
-    Y_img.save(f'{"ressources/img/result/test"}_Y.jpg', 'JPEG')
+    # Application de la DCT 2D
+    Y_block_DCT = apply_dct_on_all_blocks(Y_blocks)
 
-    Y_blocks = img_to_squares8x8(Y_channel)
+    #Quantization
+    quantified_Y_blocks = apply_quantization_to_all_blocks(Y_block_DCT)
 
-    ## - Appliquer la DCT et modifier les coefficients pour cacher le message
-    modified_Y_blocks = apply_dct_modify_coefficients(Y_blocks, message)
+    # Sort coef with ZigZag
+    zig_zag_y_block = np.array(apply_zigzag_to_all_blocks(quantified_Y_blocks))
 
-    ## - Reconstruire le canal Y à partir des blocs modifiés
-    rows, cols = Y_channel.shape
-    modified_Y_image = blocks_to_image(modified_Y_blocks, (rows, cols))
-    print(modified_Y_image[0])
+    # Impact sur les hautes fréquences
+    if IMPACT ==1:
+        zig_zag_y_block[0][5][5] = 200
 
-    Y_img = Image.fromarray(np.uint8(modified_Y_image))
-    Y_img.save(f'{"ressources/img/result/test_modif"}_Y.jpg', 'JPEG')
+    # Inverse sort
+    zig_zag_inverse_block = apply_inverse_zigzag_to_all_blocks(zig_zag_y_block)
+    print(zig_zag_inverse_block[0])
 
-    ## - Remplacer le canal Y modifié dans l'image YCbCr
-    modified_ycbcr_image = np.copy(ycbcr_image)
-    modified_ycbcr_image[:, :, 0] = modified_Y_image
+    # Déquantization
+    dct_dequants = [np.multiply(data, get_quantization_table()) for data in zig_zag_inverse_block]
 
-    ## - Convertir l'image YCbCr modifiée en RGB pour sauvegarde
-    modified_rgb_image = color.ycbcr2rgb(modified_ycbcr_image)
-    modified_rgb_image = (modified_rgb_image * 255).astype(np.uint8)
-    print(modified_rgb_image[0])
-    ## - Sauvegarder l'image modifiée
-    image = Image.fromarray(modified_rgb_image)
-    image.save(output_path)
-    print(f"Image saved to {output_path}")
+    # IDCT
+    idct_blocks = [np.round(cv2.idct(block)) for block in dct_dequants]
+
+    # Reassemble_image
+    assembled_blocks = blocks_to_image(idct_blocks,ycbcr_image[:, :, 0].shape)
+
+    # Remet sur un format 0 à 255 PNG
+    assembled_blocks = np.clip((assembled_blocks + 127),0,255).astype(np.uint8)
+
+    # Exemple modification de l'itensité
+    Y_img = Image.fromarray(np.uint8(assembled_blocks))
+    Y_img.save(f'{"ressources/img/result/steg_CDT"}_Y.jpg', 'JPEG')
 
 if __name__ == '__main__':
     main()

@@ -2,6 +2,20 @@ import numpy as np
 from PIL import Image
 from skimage import color
 from scipy.fftpack import dct, idct
+from DCT.zigzag import *
+
+def get_quantization_table():
+    quantization_table = [
+        [16, 12, 14, 14, 18, 24, 49, 72],
+        [11, 12, 13, 17, 22, 35, 64, 92],
+        [10, 14, 16, 22, 37, 55, 78, 95],
+        [16, 19, 24, 29, 56, 64, 87, 98],
+        [24, 26, 40, 51, 68, 81, 103, 112],
+        [40, 58, 57, 87, 109, 104, 121, 100],
+        [51, 60, 69, 80, 103, 113, 120, 103],
+        [61, 55, 56, 62, 77, 92, 101, 99]
+    ]
+    return quantization_table
 
 def message_to_binary(message):
     return ''.join(format(ord(char), '08b') for char in message)
@@ -13,21 +27,37 @@ def get_canals_numbers(path_img):
         return mode, canal_number
 
 def prepare_image(img_path):
-    # Ouvrir l'image
+    # Ouvrir l'image et la convertir en un tableau numpy
     img = Image.open(img_path)
     img_array = np.array(img)
-    mode,canals_num = get_canals_numbers(img_path)
-    print(mode)
+
+    # Vérifier le mode de l'image et ajuster si nécessaire
+    mode, canals_num = get_canals_numbers(img_path)
     if mode == "RGBA":
-        img_array = img_array[:, :, :3]
+        img_array = img_array[:, :, :3]  # Conserver uniquement les trois premiers canaux pour RGB
     elif mode != "RGBA" and mode != "RGB":
         raise ValueError("L'image doit être en RGB ou RGBA.")
-    return img_array
+
+    # Convertir de RGB à YCbCr
+    ycbcr_array = color.rgb2ycbcr(img_array)
+
+    save_ycbcr_channels(ycbcr_array, "ressources/img/result/test")
+
+    # Normaliser les valeurs pour qu'elles soient des entiers
+    ycbcr_array = np.round(ycbcr_array).astype(np.uint8)
+
+    return ycbcr_array
+
+def center_YCbCr_values(ycbcr_array):
+    # Retirer 127 à chaque composante pour centrer les valeurs autour de 0
+    centered_array = ycbcr_array.astype(np.int16) - 127
+    return centered_array
 
 def convert_rgb_to_ycbcr(img_array):
     # Convertir l'image RGB en YCbCr
     img_ycbcr = color.rgb2ycbcr(img_array)
     return img_ycbcr
+
 
 def img_to_squares8x8(img_array):
     square_list = []
@@ -36,18 +66,44 @@ def img_to_squares8x8(img_array):
             square_list.append(square)
     return square_list
 
-def apply_dct(block):
-    # Appliquer la DCT 2D (DCT type-II) sur le bloc
-    return dct(dct(block.T, norm='ortho').T, norm='ortho')
+def apply_dct_on_block(block):
+    # Appliquer DCT sur les lignes
+    dct_block = dct(block, axis=0, norm='ortho')
+    # Appliquer DCT sur les colonnes
+    dct_block = dct(dct_block, axis=1, norm='ortho')
+    return dct_block
 
-def apply_dct_on_blocks(blocks):
-    # Appliquer la DCT à chaque bloc de 8x8 pixels
-    dct_blocks = [apply_dct(block) for block in blocks]
-    return dct_blocks
+def apply_dct_on_all_blocks(blocks_list):
+    dct_blocks_list = [apply_dct_on_block(block) for block in blocks_list]
+    return dct_blocks_list
 
-def apply_idct(block):
-    # Appliquer la IDCT 2D (IDCT type-II) sur le bloc
-    return idct(idct(block.T, norm='ortho').T, norm='ortho')
+def apply_zigzag_to_all_blocks(dct_blocks_list):
+    zigzag_blocks_list = [np.reshape(zigzag(block), (8,8)) for block in dct_blocks_list]
+    return zigzag_blocks_list
+
+def apply_inverse_zigzag_to_all_blocks(blocks_list):
+    inverse_blocks_list = [np.reshape(inverse_zigzag(block), (8,8)) for block in blocks_list]
+    return inverse_blocks_list
+
+
+def apply_quantization(block, quantization_table):
+    # Assurer que block et quantization_table sont des np.array
+    block_array = np.array(block)
+
+    # Appliquer la quantification
+    quantized_block = np.round(block_array / quantization_table).astype(np.int32)
+    return quantized_block
+
+
+def apply_quantization_to_all_blocks(blocks_list):
+    # Convertir quantization_table en np.array une seule fois
+    quantization_table = np.array(get_quantization_table())
+    quantized_blocks_list = [apply_quantization(block, quantization_table) for block in blocks_list]
+    return quantized_blocks_list
+
+
+
+
 
 def blocks_to_image(blocks, image_shape):
     rows = image_shape[0] - image_shape[0] % 8
