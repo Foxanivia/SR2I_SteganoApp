@@ -1,0 +1,104 @@
+import os
+import sys
+import urllib
+
+import numpy as np
+import cmath
+
+from PIL import Image
+from imageio import imread
+
+
+def spa_image(image, channel=0):
+    if channel!=None:
+        width, height, channels = image.shape
+        I = image[:,:,channel]
+    else:
+        I = image
+        width, height = I.shape
+
+    r = I[:-1,:]
+    s = I[1:,:]
+
+    # we only care about the lsb of the next pixel
+    lsb_is_zero = np.equal(np.bitwise_and(s, 1), 0)
+    lsb_non_zero = np.bitwise_and(s, 1)
+    msb = np.bitwise_and(I, 0xFE)
+
+    r_less_than_s = np.less(r, s)
+    r_greater_than_s = np.greater(r, s)
+
+    x = np.sum(np.logical_or(np.logical_and(lsb_is_zero, r_less_than_s),
+                             np.logical_and(lsb_non_zero, r_greater_than_s)).astype(int))
+
+    y = np.sum(np.logical_or(np.logical_and(lsb_is_zero, r_greater_than_s),
+                             np.logical_and(lsb_non_zero, r_less_than_s)).astype(int))
+
+    k = np.sum(np.equal(msb[:-1,:], msb[1:,:]).astype(int))
+
+    if k==0:
+        print("ERROR")
+        sys.exit(0)
+
+    a=2*k
+    b=2*(2*x-width*(height-1))
+    c=y-x
+    print(cmath.sqrt(b**2-4*a*c))
+    bp=(-b+cmath.sqrt(b**2-4*a*c))/(2*a)
+    bm=(-b-cmath.sqrt(b**2-4*a*c))/(2*a)
+
+    beta=min(bp.real, bm.real)
+    return beta
+
+
+def is_valid_image(path):
+    try:
+        image = Image.open(path)
+    except Exception as e:
+        print(str(e))
+        return False
+
+    try:
+        image.verify()
+    except Exception as e:
+        print(str(e))
+        return False
+
+    return True
+
+
+def SamplePairsAnalysis(image_path) -> None:
+    if not is_valid_image(image_path):
+        print("Please, provide a valid image")
+        sys.exit(0)
+
+    threshold = 0.05
+    print(sys.argv)
+    if len(sys.argv) == 5:
+        threshold = float(sys.argv[3])
+    print("Using threshold:", threshold)
+
+    I = imread(image_path)
+    if len(I.shape) == 2:
+        bitrate = spa_image(I, None)
+        if bitrate < threshold:
+            print("No hidden data found")
+        else:
+            print("Hidden data found"), bitrate
+    else:
+        bitrate_R = spa_image(I, 0)
+        bitrate_G = spa_image(I, 1)
+        bitrate_B = spa_image(I, 2)
+
+        if bitrate_R < threshold and bitrate_G < threshold and bitrate_B < threshold:
+            print("No hidden data found")
+            sys.exit(0)
+
+        if bitrate_R >= threshold:
+            print("Hidden data found in channel R", bitrate_R)
+        if bitrate_G >= threshold:
+            print("Hidden data found in channel G", bitrate_G)
+        if bitrate_B >= threshold:
+            print("Hidden data found in channel B", bitrate_B)
+    return
+
