@@ -89,8 +89,6 @@ Dans le dossier /ressources/img/result se trouvent un ensemble d'image généré
 - test_Cr.jpg 
 - test_Y.jpg (qui montrent toutes trois la décomposition en YCbCr de l'image)
 
-## Cloisonement
-
 ## Auteurs
 
 Lucas MARACINE 
