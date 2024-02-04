@@ -25,7 +25,7 @@ Installez les dépendances nécessaires à l'aide de `pip` :
 pip install -r requirements.txt
 ```
 
-## Utilisation
+## Utilisation "IA detection"
 
 Pour analyser une image, utilisez la commande suivante dans le terminal :
 
@@ -41,8 +41,58 @@ python main.py --method nom_methode nom_image
 - **ia_steghide** : Utilise le réseau de neurones pour l'analyse steghide.
 - **spa** : attaque SimplePairs (statistique sur le fait que le LSBR est une opération asymétrique : LSBR fait augmenter la valeur des pixels pairs et decrémenter la valeur des pixels impairs).
 
+## Utilisation "création d'image steganographique"
+
+### LSB 
+
+#### Commande
+
+```bash
+python App_LSB.py
+```
+
+#### Fonctionnement
+
+- Ce petit script guide l'utilisateur dans la création d'une image steganographique.
+- L'utilisateur doit indiquer une image présente dans le repertoire ressource/img.
+- L'utilisateur indique ensuite son mode de steganographique (LSB simple ou LSB matching)
+- Le mode de récupération du mot de passe est le même pour LSB simple et LSB matching
+- L'utilisateur indique le nombre de canaux utilisés
+- Si l'utilisateur a choisis LSB normal, lui demande le nombre de bit à utiliser
+
+#### Resultat 
+
+- Les résultats apparaissent dans ressource/img/result
+- L'image steganographié est dans ressource/img/result/encoded_image.png
+- L'image avec une normalisation des LSB est dans ressource/img/result/encoded_image.png
+
+### DCT
+
+
+
+#### Commande:
+
+```bash
+python App_DCT.py
+```
+
+#### Fonctionnement 
+L'utilisation de la méthode DCT étant délicate ce script explique l'ensemble de son fonctionnement étape par étape. 
+Le fait de cacher un message avec cette méthode n'est pas trivial.
+Le script explique donc de lui même l'ensemble des étapes passé et des actions effectué. 
+
+#### Resultat
+
+Dans le dossier /ressources/img/result se trouvent un ensemble d'image généré au cours des explications. 
+- steg_CDT_Y.jpg (Image utilisant la méthode DCT pour montrer le retour à la normal du canal Y après épuration des hautes fréquences)
+- test_Cb.jpg 
+- test_Cr.jpg 
+- test_Y.jpg (qui montrent toutes trois la décomposition en YCbCr de l'image)
 
 ## Cloisonement
 
 ## Auteurs
+
+Lucas MARACINE 
+Loïc TESTA
 
