@@ -45,7 +45,7 @@ def main():
 
     # Impact sur les hautes fréquences
     if IMPACT ==1:
-        zig_zag_y_block[0][5][5] = 200
+        zig_zag_y_block[0][5][5] = 1
 
     # Inverse sort
     zig_zag_inverse_block = apply_inverse_zigzag_to_all_blocks(zig_zag_y_block)

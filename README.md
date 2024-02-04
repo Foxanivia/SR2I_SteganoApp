@@ -66,6 +66,21 @@ python App_LSB.py
 - L'image steganographié est dans ressource/img/result/encoded_image.png
 - L'image avec une normalisation des LSB est dans ressource/img/result/encoded_image.png
 
+#### Commande:
+
+Afin de seulement cacher un secret.
+Le choix de chemin de sorti n'est que partiellement implémenter. 
+```bash
+python App_DCT.py -e
+```
+
+#### Commande:
+Afin de seulement récupérer un secret.
+Le choix du chemin d'entrée n'est que partiellement implémenté.
+```bash
+python App_DCT.py -d 
+```
+
 ### DCT
 
 

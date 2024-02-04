@@ -1,7 +1,20 @@
+###################
+#  Bibliothèques  #
+###################
 from LSB.LSB_commun import *
 
 
+################################
+#  Decodage pour LSBr et LSBm  #
+################################
 def decode_message(encoded_img_path, bits=1, canals=1):
+    """
+    Récupère le secret présent dans une image steganographié
+    :param encoded_img_path:
+    :param bits:
+    :param canals:
+    :return:
+    """
     # Vérifie que le nombre de bits est soit 1 soit 2
     if bits not in range(1, 9):
         raise ValueError("Le nombre de bits doit être 1 ou 2 ou 3.")
