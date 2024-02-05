@@ -6,7 +6,7 @@ from attack import spa
 def main():
     parser = argparse.ArgumentParser(description="Some steganalysis tools")
     parser.add_argument("image_path", type=str, help="Image path to analyse")
-    parser.add_argument("--method", type=str, choices=['ia_lsbr', 'ia_steghide', 'pairanal', 'sup2', 'sup3', 'sup4', 'sup5'], help="Steganalysis method to be used")
+    parser.add_argument("--method", type=str, choices=['ia_lsbr', 'ia_steghide', 'simplePairAnalysis'], help="Steganalysis method to be used")
 
     args = parser.parse_args()
 
@@ -14,7 +14,7 @@ def main():
         print("Probabilité d'utilisation de LSBR sur cette image : {}l".format(lsbr(args.image_path)))
     elif args.method == 'ia_steghide':
         print("Probabilité d'utilisation de Steghide sur cette image : {}l".format(steghide(args.image_path)))
-    elif args.method == 'pairanal':
+    elif args.method == 'simplePairAnalysis':
         spa(args.image_path)
     else:
         print("Unknown analysis method !")
